@@ -1,160 +1,109 @@
-<div align="center">
+> **Chatgpt代充：[aishopvip.com](https://aishopvip.com)**
 
-<img src="assets/readme-hero.png" alt="绿盾透明加密环境下，由获授权的 WPS 批量将 Word 和 WPS 文档快速导出为 PDF" width="100%">
+# RY-word2PDF-archiver
 
-# WPS Batch PDF Converter
+**Word 转 PDF · 解密归档助手**
 
-### 绿盾等透明加密环境下，用 WPS 快速批量转 PDF
+把注册同事发来的 Word 文件夹，整理成可交付的 PDF 压缩包。基于本机 WPS、绿盾官方常驻服务和 WinRAR，所有文档在本机处理。
 
-**普通脚本读不到，WPS 可以打开；Adobe 转换太慢，WPS 原生批量又可能需要会员。**<br>
-把 WPS 免费的单文件导出能力，自动串成一条本地批处理流水线。
+## 现在怎么试用
 
-[![Download](https://img.shields.io/badge/下载最新版-Windows_x64-E53935?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/jedliuai/wps-batch-pdf-converter/releases/latest) [![Source](https://img.shields.io/badge/查看源码-Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](WPS转PDF神器.py)
+**当前是 2.0 源码试用版，暂不提供新版 EXE，请按下方步骤从源码运行。**
 
-[![Latest release](https://img.shields.io/github/v/release/jedliuai/wps-batch-pdf-converter?style=flat-square&label=Release)](https://github.com/jedliuai/wps-batch-pdf-converter/releases/latest) [![Downloads](https://img.shields.io/github/downloads/jedliuai/wps-batch-pdf-converter/total?style=flat-square&label=Downloads&color=brightgreen)](https://github.com/jedliuai/wps-batch-pdf-converter/releases) [![Platform](https://img.shields.io/badge/Platform-Windows-0078D4?style=flat-square&logo=windows11&logoColor=white)](#运行条件与边界) [![License](https://img.shields.io/badge/License-MIT-2EA44F?style=flat-square)](LICENSE)
+安装下方依赖后，可以双击 **`启动程序.vbs`** 打开桌面界面。如果没有启动，双击 **`start.bat`** 查看错误。
 
-[适用场景](#-先判断它是否适合你) · [30 秒上手](#-30-秒开始使用) · [能力说明](#-真实能力与默认行为) · [安全边界](#-运行条件与边界) · [问题反馈](https://github.com/jedliuai/wps-batch-pdf-converter/issues)
-
-</div>
-
-> [!IMPORTANT]
-> **使用前提：你必须能够在这台电脑上用 WPS 正常打开并导出目标文档。**<br>
-> 如果 WPS 自己也打不开，或当前账号没有读取、导出权限，本工具同样无法处理。它不负责解密，也不会绕过企业安全策略。
-
-## ✨ 为什么会有这个项目
-
-这不是一个面向所有人的通用 Word 转 PDF 工具，而是为一种很具体的办公困境而生：
-
-| 现实限制 | 这个项目的应对方式 |
-| :--- | :--- |
-| 🔒 绿盾等透明加密让普通 Python/headless 程序无法读取文档 | 让**当前环境已授权的 WPS** 正常打开并导出 |
-| 🐢 Adobe 等获授权软件可以处理，但实际转换速度太慢 | 使用 WPS **更快、版式稳定**的单文件导出能力 |
-| 💎 WPS 单文件导出免费，原生批量 PDF 导出属于会员功能 | 不调用会员入口，把正常的**单文件导出自动串成批处理** |
-| 📁 文件散落在多层目录，手工逐个操作费时 | 自动递归扫描、转换并跳过已有 PDF |
-
-> [!NOTE]
-> WPS 的功能与会员权益可能随版本和地区变化，请以当前官方说明为准。<br>
-> [WPS 官方教程：普通导出与会员批量导出说明](https://www.wps.com/academy/how-to-convert-word-excel-ppt-to-pdf-for-free-in-wps-office-quick-tutorials-1863083/)
-
-## 🎯 先判断它是否适合你
-
-| 你的情况 | 判断 |
-| :--- | :---: |
-| 文档受绿盾等软件保护，普通脚本读不到，但 WPS 可以正常打开和导出 | ✅ **正是核心场景** |
-| Adobe 等获授权软件也能处理，但在实际环境中转换太慢 | ✅ **适合** |
-| 文档没有加密，也没有软件访问限制 | ⚠️ 通常没必要 |
-| WPS 无法打开，或当前用户没有读取、导出权限 | ❌ **无法处理** |
-| 需要在 macOS、Linux、服务器或无人值守环境运行 | ❌ **不适合** |
-
-普通未加密文档，建议优先考虑更通用的 Python、LibreOffice 或 headless 批量方案；本项目的独特价值在于 **普通进程读不到，但获授权的 WPS 读得到**。
-
-## 🚀 30 秒开始使用
-
-1. 确认已安装桌面版 **WPS Office**，并用 WPS 手动打开一个目标文档验证权限。
-2. 从 [Releases](https://github.com/jedliuai/wps-batch-pdf-converter/releases/latest) 下载 `WPS-Batch-PDF-Converter-*-Windows-x64.exe`。
-3. 双击运行，选择存放文档的根文件夹，等待转换完成。
-
-```text
-📂 选择根文件夹
-│
-├─ 客户 A/报价单.docx  ──→  客户 A/报价单.pdf
-├─ 客户 A/说明书.wps   ──→  客户 A/说明书.pdf
-├─ 客户 B/合同.doc      ──→  客户 B/合同.pdf
-└─ 客户 B/已归档.docx   ──→  已有同名 PDF，自动跳过
-```
-
-> [!TIP]
-> 转换过程中 WPS 窗口保持可见是正常行为。这能兼容部分文档保护环境的访问策略，请不要手动关闭 WPS。
-
-> [!WARNING]
-> Release EXE 暂未进行商业代码签名，Windows 首次运行时可能显示 SmartScreen 提示。请只从本仓库 Release 下载；SHA-256 校验值会写在对应 Release 说明中。
-
-## ⚡ 核心能力
-
-| | | |
-| :--- | :--- | :--- |
-| 🔐 **受限环境适配**<br>借助获授权的桌面版 WPS 访问文档 | ⚡ **快速批量导出**<br>复用 WPS 单文件转 PDF 能力 | 🌲 **递归扫描**<br>自动处理所有下级文件夹 |
-| 🛡️ **完全本地**<br>源码没有文档上传逻辑 | ♻️ **断点友好**<br>已有同名 PDF 自动跳过 | 📊 **进度可见**<br>显示成功、失败与当前文件 |
-
-## 📋 真实能力与默认行为
-
-| 项目 | 当前行为 |
-| :--- | :--- |
-| **输入格式** | `.doc`、`.docx`、`.wps` |
-| **扫描范围** | 所选文件夹及全部子文件夹 |
-| **输出位置** | 与源文档相同目录、相同文件名 |
-| **已有 PDF** | 自动跳过，不覆盖 |
-| **临时文件** | 自动忽略以 `~$` 开头的文件 |
-| **转换引擎** | 本机 WPS Office，通过 Windows COM 调用 |
-| **文件传输** | 完全本地处理，不上传到云端 |
-| **过程反馈** | 控制台显示总数、当前进度、成功数与失败数 |
-
-## 🧭 它是如何工作的
-
-```mermaid
-flowchart LR
-    A[受透明加密保护的<br/>DOC / DOCX / WPS] --> B{WPS 能否<br/>正常打开?}
-    B -- 否 --> C[停止处理<br/>不解密、不绕权]
-    B -- 是 --> D[获授权的 WPS<br/>逐个导出 PDF]
-    D --> E[写入源文件同目录]
-    E --> F[已有同名 PDF<br/>下次自动跳过]
-```
-
-## 🛡️ 运行条件与边界
-
-- 仅支持 **Windows**，需要已安装并可正常使用的桌面版 WPS Office。
-- 只有 WPS 本身能正常打开、并获准导出的文档才可能转换成功。
-- 程序让 WPS 保持可见并走正常的打开、导出流程，**不会自行解密、修改绿盾、绕过权限或规避企业安全策略**。
-- 最终版式以 WPS 打开文档时的效果为准；速度取决于 WPS、文档复杂度与电脑性能。
-- 同目录已有同名 PDF 时会直接跳过。如需重新生成，请先自行备份或移走旧 PDF。
-
-### 这是在绕过 WPS 会员吗？
-
-**不是。** 本工具不会解锁或调用 WPS 的会员批量转换入口，也不会修改 WPS、账号或授权状态。它只是对每个有权正常打开的文档，依次调用 WPS 桌面版自身的单文件 PDF 导出能力。请遵守 WPS 的许可条款和所在组织的安全政策。
-
-<details>
-<summary><strong>🧑‍💻 从源码运行</strong></summary>
-
-需要 Python 3.9+（推荐 64 位 Windows）：
+在其他电脑从源码运行，需要 Windows、Python 3.10+（包含 Tkinter），安装依赖后启动：
 
 ```powershell
-git clone https://github.com/jedliuai/wps-batch-pdf-converter.git
-cd wps-batch-pdf-converter
 python -m pip install -r requirements.txt
-python ".\WPS转PDF神器.py"
+python "WPS转PDF神器.py"
 ```
 
-自行构建单文件 EXE：
+还需要：
+
+- WPS Office：当前用户能够正常打开和导出这些文档。
+- 绿盾常驻解密程序 `LdDecryptHotkey.exe`：需要提供 `GreenShieldQuickApply.Mcp.v1` 本地接口（本机服务 1.4.1 已联调）。程序不会绕过组织审批。
+- WinRAR：需要包含 `Rar.exe`，支持从安装注册表自动查找。无需把 WinRAR 加入 PATH。
+
+## 推荐使用方式
+
+1. 把一个文件夹、ZIP 或 RAR 拖入窗口，也可点击“选择文件夹”或“选择压缩包”。拖入只选择输入，点击“开始转换、解密并打包”才执行。可先点击“扫描清单”。
+   文件夹直接处理；压缩包先在旁边建立独立的解压目录，完整解压并检查后继续，保留原压缩包。支持子文件夹、中文和空格名称，不覆盖已有解压目录。
+2. 点击“开始转换、解密并打包”。如果已有同名 PDF，默认停止；确需重新导出时，勾选“备份旧 PDF 后重新转换”。
+3. 如绿盾出现审批窗口，按组织流程处理。两分钟仍未确认解密完成时，界面暂停；批准后点击“继续等待解密”，不会重复提交申请。
+4. RAR 验证通过后，先抽查 PDF 的内容、排版和图片。
+5. 点击“全选可清理项”，也可逐个勾选，再点击“确认清理选中 Word”。Word 进入回收站。所有 Word 处理完成后自动清理中间文件；文件夹输入保留 PDF 和 RAR，压缩包输入则保留原压缩包和最终 RAR，删除本次解压目录。
+
+抽查导致 PDF 或源 Word 再次被绿盾加密时，清理前会申请再次解密，并核对内容仍与原先验证的文件相同。如果这次解密需要等待，在批准后点击继续等待，复核通过后再确认清理。
+
+熟悉并确认稳定后，可以主动勾选“全自动”：所有检查通过后自动将本次全部 Word 移入回收站。建议试用期间保持默认关闭。
+
+## 为什么把清理放在最后
+
+流程是 **扫描 → WPS 转换 → 官方解密与 PDF 校验 → RAR 打包校验 → 清理 Word**。
+
+WPS 导出的 PDF 可能仍受绿盾保护，导出没报错不能证明最终 PDF 可交付。先完成解密和打包验证，再清理源文件，删除之前就有一份已验证的交付物。
+
+界面原生使用 Tkinter，不会启动 Chrome、Edge 或其他浏览器。复用了另一个批量删除项目的递归清单、全选/取消和批量清理交互，但把永久删除改为回收站。
+
+## 自动检查什么
+
+| 环节 | 检查与异常行为 |
+| --- | --- |
+| 扫描 | `.doc`、`.docx`、`.wps`；忽略 `~$` Word 临时文件；无法访问、链接/联接点、同名源文件冲突时停止 |
+| 转换 | 全批次只启动一个 WPS 会话，逐份只读打开、获取页数并导出，全部结束后退出 WPS；单份卡住 180 秒时停止 |
+| 已有 PDF | 不会默默跳过后允许删除 Word。明确允许重转时，先备份旧 PDF，再用本次导出结果替换 |
+| 源文件一致性 | 扫描时保存核对副本。WPS 可能自动加密源 Word，因此解密后比较副本和源文件的字节内容；不一致就停止 |
+| 绿盾 | 对处理目录整体申请解密，核对副本目录也整体提交，不逐文件申请；递归复核数量、加密头和可读性，再实际校验 PDF |
+| PDF | 明文 PDF 头、完整尾部、可解析页面和内容流、有效页面尺寸；转换文件的页数必须等于 WPS 源文档页数 |
+| RAR | 真正的 RAR5；完整性测试、文件清单核对、临时解压后与全部明文 PDF 的 SHA-256 比较 |
+| 清理 | 再次检查源文件、全部 PDF、文件清单和 RAR 未变化；逐项移入回收站；中途失败立即停止并记录已完成项 |
+
+PDF 结构检查使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.4.0/modules/PdfReader.html)。结构和页数一致仍不能保证排版、图像、文字内容完全正确，因此默认保留人工抽查步骤。
+
+**任何失败都不会自动放行下一环节。** 中途停止不会撤销已经提交的绿盾申请，也不会撤销此前已经完成的转换或清理。
+
+## 最终交付物和任务记录
+
+- RAR 位于所选目录旁边，命名为“原名称-PDF.rar”，不带时间和随机码。重名时仅加“(2)、(3)”等序号，不覆盖已有结果。
+- 包内只含目录内的全部 PDF（包括原先已有的 PDF），保留子目录结构。不收录 Word、日志及其他附件。
+- 其他类型的文件不删除、不打包；按整个处理目录申请解密时，目录内附件会一并交给绿盾按自身策略处理。
+- 核对副本、旧 PDF 备份、转换临时文件和日志在运行期间存放于 `%LOCALAPPDATA%/WPSPDFWorkflow/jobs/`。完整任务完成后自动删除整个本次工作目录；等待人工确认或失败的任务仍保留，方便检查。
+- 压缩包的工作目录使用“解压文件”等简洁名称，重名仅加序号；任务完成后删除该目录和解压清单，原包不动。
+- 运行期间的 `report.json` 记录文件、哈希、页数和已清理项，`run.log` 记录过程，`input.json` 记录原包路径及 SHA-256。这些记录属于中间文件，成功完成后也会清理。
+- 自动清理前核对最终 RAR 和原包未变化，拒绝清理原始目录、链接或含用户新增文件的解压目录。中间文件被占用时单独提示，保留已生成的交付物。
+- 暂停待批任务可在当前窗口继续等待；关闭窗口后不会自动恢复任务。重开后如需重转，需明确允许备份并重转已有 PDF。
+
+## 已验证与限制
+
+已用本机真实 WPS、绿盾 1.4.1、WinRAR 和 Windows 回收站完成样本联调：两份 Word（两页/一页）、一份已有 PDF，三个 PDF 全部解密、校验并归档，两个生成样本完成回收站清理。没有删除用户的业务文件。
+
+- 不强杀 WPS。若 WPS 会话已有其他文档，停止并提示先保存关闭，避免影响用户工作。
+- 碰到超时或弹窗，请先检查 WPS，再重新开始。
+- 权限、审批和回收站操作失败时停止，不降级为永久删除。
+- 大批量任务包含备份、逐页解析、解压验证和清理前重复哈希检查，需要额外磁盘空间与时间。
+- 文件夹扫描最多 10,000 文件；解密目标含核对副本，合计也不能超过服务的 10,000 文件上限。
+- 单次拖入一个输入；暂不处理带压缩密码的包、分卷包、嵌套压缩包自动展开；这些情况可先手动解压，再拖入文件夹。绿盾保护的压缩包会先走官方解密流程。
+- 解压前检查路径、重名、链接和磁盘空间；限制 10,000 条目、20 GB 解压数据；损坏或失败时保留“解压中”目录，不进入转换。
+
+## 绿盾怎么接入，怎么确认完成
+
+桌面程序通过 Windows 当前用户的命名管道 `GreenShieldQuickApply.Mcp.v1`，向已运行的 `LdDecryptHotkey.exe` 发送 JSON 请求。MCP 工具也是连接这个常驻后台；桌面程序可以独立运行，不依赖 Codex 在线。后台走已安装绿盾的官方申请流程，审批和权限不变。
+
+调用顺序为 `status`（服务就绪）→ `check`（递归检查）→ 必要时 `request`（目录申请）→ `wait`（等待，不重复申请）→ 再次 `check`。
+
+后台识别已知加密头 `87 7D 1C ?? 90 10 29 01`，逐次检查文件可读性和剩余加密数量。只有加密头消失、不可读和警告均为零、扫描数量与完整清单一致时，才允许进入 PDF 解析和页数检查。实际 PDF 必须能按明文读取和解析；仅仅点击了申请、申请已提交或等待时间到了，都不会被视为成功。
+
+日志会显示扫描数量、仍加密数量、不可读数量和最终复核结果。超时仍加密就停在等待阶段，可在批准后继续等待。
+
+## 开发验证
 
 ```powershell
-python -m pip install pyinstaller
-pyinstaller --clean ".\WPS转PDF神器.spec"
+python -m unittest discover -s tests -v
 ```
 
-</details>
+`tests/local_smoke.py` 是显式运行的本机联调脚本，需要额外安装 `python-docx`。它只生成并处理自己的样本，可能出现官方审批窗口，不纳入普通单元测试。
 
-<details>
-<summary><strong>🔍 隐私、安全与问题反馈</strong></summary>
+项目入口为 `WPS转PDF神器.py`；界面在 `desktop_app.py`，流程在 `pdf_workflow.py`，绿盾/WinRAR/回收站在 `local_services.py`，WPS 子进程在 `wps_worker.py`。
 
-程序只遍历你主动选择的本地文件夹，并通过本机 WPS 打开和导出文档；源码中没有网络上传逻辑。对安全敏感的环境，建议审阅源码后运行或自行构建。
-
-报告问题时，请提供 Windows 版本、WPS 版本、输入扩展名、是否处于文档保护环境，以及脱敏后的控制台错误信息。**请勿上传含敏感内容的原始文档。**
-
-[提交问题](https://github.com/jedliuai/wps-batch-pdf-converter/issues/new/choose)
-
-</details>
-
----
-
-<div align="center">
-
-### 如果它替你省下了重复劳动
-
-[![Star](https://img.shields.io/github/stars/jedliuai/wps-batch-pdf-converter?style=social)](https://github.com/jedliuai/wps-batch-pdf-converter)
-
-欢迎 Star、分享给处在相同办公环境中的人，或通过 Issue 帮助它覆盖更多真实场景。
-
-MIT License · Maintained by [Jed (@jedliuai)](https://github.com/jedliuai)<br>
-[查看更多面向真实工作流的开源自动化工具](https://github.com/jedliuai?tab=repositories)
-
-</div>
+MIT License · [原项目](https://github.com/jedliuai/wps-batch-pdf-converter)

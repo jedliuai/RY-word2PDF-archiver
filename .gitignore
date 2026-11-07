@@ -17,3 +17,5 @@ make_icon.py
 .vscode/
 .DS_Store
 Thumbs.db
+.test-artifacts/
+测试文件/
