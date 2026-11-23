@@ -74,7 +74,8 @@ class Controller:
                 except ValueError:
                     rel = source
                 files.append({'source': source, 'name': rel, 'status': row['status'],
-                              'pages': row.get('pages', 0), 'verified': bool(row.get('pdf_hash')),
+                              'pages': row.get('pages', 0), 'exported': row.get('exported', False),
+                              'verified': bool(row.get('pdf_hash')),
                               'recycled': row['recycled'], 'selected': source in self.selected})
             path = Path(self.path) if self.path else None
             archive = workflow.archive if workflow and workflow.archive else None
@@ -134,8 +135,8 @@ class Controller:
                 if self.workflow is not None:
                     self.display_phase = self.workflow.phase
                 if value:
-                    if self.input_phase == 'waiting_input' and self.workflow is None:
-                        self.notice = {'title': '等待压缩包解密', 'message': value}
+                    if self._phase() in ('waiting', 'waiting_input'):
+                        self.notice = {'title': PHASES[self._phase()], 'message': value}
                     else:
                         self.error = {'title': '流程已停止', 'message': value,
                                       'jobDir': str(self.workflow.job_dir) if self.workflow else ''}

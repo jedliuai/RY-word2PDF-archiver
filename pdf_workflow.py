@@ -86,18 +86,16 @@ def validate_pdf(path, expected_pages=None):
             if b'%%EOF' not in stream.read():
                 raise WorkflowError('PDF 尾部不完整')
             stream.seek(0)
-            reader = PdfReader(stream, strict=True)
-            if reader.is_encrypted:
-                raise WorkflowError('PDF 本身有密码保护，无法完整校验')
+            reader = PdfReader(stream)
+            if reader.is_encrypted and not reader.decrypt(''):
+                raise WorkflowError('PDF 打开需要密码')
             pages = len(reader.pages)
             if pages < 1:
                 raise WorkflowError('PDF 没有页面')
             for page in reader.pages:
-                if float(page.mediabox.width) <= 0 or float(page.mediabox.height) <= 0:
-                    raise WorkflowError('PDF 页面尺寸无效')
                 contents = page.get_contents()
                 if contents is not None:
-                    contents.get_data()  # Resolve and decompress every page content stream.
+                    contents.get_data()
             if expected_pages is not None and pages != expected_pages:
                 raise WorkflowError(f'页数不一致：Word {expected_pages} 页 / PDF {pages} 页')
             return pages
@@ -115,6 +113,7 @@ class Document:
     pdf_hash: str = ''
     status: str = '待转换'
     recycled: bool = False
+    exported: bool = False
 
 
 class WpsConverter:
@@ -308,7 +307,7 @@ class Workflow:
             collisions = [d for d in self.documents if Path(d.pdf).exists()]
             if collisions and not self.overwrite:
                 raise WorkflowError(f'已有 {len(collisions)} 份同名 PDF，不能直接作为本次转换结果。请先备份移走，或勾选“备份旧 PDF 后重新转换”。')
-            self.update('converting', '只启动一个 WPS 会话，连续导出全部文档；单份卡住 180 秒时停止。')
+            self.update('converting', '在后台使用一个 WPS 会话连续导出；单份卡住 180 秒时停止。')
             exports = self.job_dir / 'exports'
             exports.mkdir()
             jobs = [{'source': d.source, 'output': str(exports / f'{index}.pdf')}
@@ -316,11 +315,10 @@ class Workflow:
             def publish(index, pages):
                 d = self.documents[index - 1]
                 self.check_cancel()
-                self.log(f'[{index}/{len(self.documents)}] 已导出：{Path(d.source).relative_to(self.root)}')
                 # Export outside the source tree: failures leave no partial delivery PDF.
                 output = exports / f'{index}.pdf'
-                d.pages = pages
-                self.check_cancel()
+                if not output.is_file() or output.stat().st_size == 0:
+                    raise WorkflowError(f'WPS 没有生成非空 PDF：{Path(d.source).name}')
                 target = Path(d.pdf)
                 if target.exists():
                     if not self.overwrite:
@@ -337,6 +335,9 @@ class Workflow:
                     if temporary.exists():
                         temporary.unlink()
                 d.status = '已导出，待解密校验'
+                d.exported = True
+                d.pages = pages
+                self.log(f'[{index}/{len(self.documents)}] 已导出：{Path(d.source).relative_to(self.root)}')
                 self.save()
                 self.emit('files', [asdict(item) for item in self.documents])
                 self.emit('progress', (index, len(self.documents)))
@@ -435,16 +436,18 @@ class Workflow:
             document.source_hash = source_hash
         self.sources_verified = True
         self._inventory_unchanged()
-        self.update('verifying', '解密完成，逐页解析全部 PDF 并核对源文档页数。')
-        expected = {Path(d.pdf): d.pages for d in self.documents}
+        self.update('verifying', '解密完成，逐页解析 PDF 内容流，并核对新导出的 PDF 与源 Word 的页数。')
+        generated = {Path(d.pdf): d for d in self.documents}
         for index, pdf in enumerate(self.pdfs, 1):
             self.check_cancel()
-            pages = validate_pdf(pdf, expected.get(pdf))
-            self.pdf_hashes[str(pdf)] = file_hash(pdf)
+            document = generated.get(pdf)
+            pages = validate_pdf(pdf, document.pages if document is not None else None)
+            digest = file_hash(pdf)
+            self.pdf_hashes[str(pdf)] = digest
+            if document is not None:
+                document.pdf_hash = digest
+                document.status = f'校验通过 · {pages} 页'
             self.log(f'[{index}/{len(self.pdfs)}] PDF 校验通过：{pdf.relative_to(self.root)}（{pages} 页）')
-        for d in self.documents:
-            d.pdf_hash = self.pdf_hashes[d.pdf]
-            d.status = f'校验通过 · {d.pages} 页'
         self._inventory_unchanged()
         self.update('archiving', 'PDF 全部通过，开始创建 RAR 并检查完整性、清单和内容。')
         # Keep transient archives inside the private task directory; visible

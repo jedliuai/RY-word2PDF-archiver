@@ -147,7 +147,9 @@ def main(debug=False):
         return True
 
     window.events.closing += on_closing
-    webview.start(_bind_drop, (window, api), gui='edgechromium', debug=debug, private_mode=True)
+    # pywebview resets its DOM event registry when the page finishes loading.
+    window.events.loaded += lambda: _bind_drop(window, api)
+    webview.start(gui='edgechromium', debug=debug, private_mode=True)
 
 
 if __name__ == '__main__':

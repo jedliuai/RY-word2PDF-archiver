@@ -73,6 +73,17 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(state['notice']['message'], '压缩包等待审批')
         self.assertTrue(state['canResume'])
 
+    def test_interrupted_decryption_wait_still_offers_resume(self):
+        c = self.controller
+        c.accept_input(str(self.root))
+        c.busy = True
+        c.workflow = SimpleNamespace(phase='waiting', root=self.root, archive=None, pdfs=[], job_dir=self.root)
+        c.on_event('done', '已停止等待')
+        state = c.snapshot()
+        self.assertTrue(state['canResume'])
+        self.assertIsNone(state['error'])
+        self.assertEqual(state['notice']['message'], '已停止等待')
+
     def test_cleanup_requires_selection(self):
         with self.assertRaises(ValueError):
             self.controller.cleanup()

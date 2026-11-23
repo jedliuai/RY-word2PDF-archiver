@@ -12,7 +12,7 @@ def run_jobs(jobs, on_result, on_status=lambda *args: None):
     app = doc = None
     owned = False
     try:
-        for progid in ('Kwps.Application', 'Wps.Application'):
+        for progid in ('KWPS.Application', 'Wps.Application'):
             try:
                 app = win32com.client.DispatchEx(progid)
                 break
@@ -23,7 +23,7 @@ def run_jobs(jobs, on_result, on_status=lambda *args: None):
         if app.Documents.Count:
             raise RuntimeError('WPS 返回的会话里已有其他文档。为保护你的工作，请保存并关闭 WPS 后重试。')
         owned = True
-        app.Visible = True
+        app.Visible = False
         app.DisplayAlerts = 0
         for index, job in enumerate(jobs, 1):
             source, output = job['source'], job['output']

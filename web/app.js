@@ -178,7 +178,7 @@ function processScreen(s, step, failed) {
   else if (!determinate) barClass += ' indeterminate';
 
   const left = determinate ? `第 ${p.current} / ${p.total} 份` : (waiting ? '已暂停，等待审批' : (s.busy ? '处理中' : ''));
-  const exported = s.files.filter((f) => f.pages > 0).length;
+  const exported = s.files.filter((f) => f.exported).length;
   const tiles = `<div class="tiles">
     <div class="tile"><span class="k">Word 文档</span><span class="v">${s.counts.words || '—'}${s.counts.words ? ' 份' : ''}</span></div>
     <div class="tile"><span class="k">已导出 PDF</span><span class="v">${exported} 份</span></div>
@@ -272,6 +272,7 @@ function reviewScreen(s) {
     </section>
     <footer class="footer">
       <span class="note">${cleaning ? '每份清理前都会重新核对 PDF 与 RAR。' : 'PDF 与 RAR 会保留，核对副本和临时文件在全部完成后自动清理。'}</span>
+      ${cleaning && !complete ? '<button type="button" class="btn" data-action="stop">停止</button>' : ''}
       ${cta}
     </footer>`;
 }
@@ -386,7 +387,8 @@ document.addEventListener('drop', (e) => {
   const now = Date.now() / 1000;
   const names = ['申报书/技术报告.docx', '申报书/项目概况.docx', '申报书/申请表.docx', '附件/材料清单.docx', '附件/检测报告.docx', '附件/说明书.doc'];
   const files = names.map((n, i) => ({ source: 'D:\\业务资料\\2026-11 注册申报\\' + n, name: n, pages: mode === 'start' ? 0 : i % 4 + 1,
-    status: mode === 'review' ? `校验通过 · ${i % 4 + 1} 页` : '已导出，待解密校验', verified: mode === 'review', recycled: false, selected: mode === 'review' }));
+    status: mode === 'review' ? `校验通过 · ${i % 4 + 1} 页` : '已导出，待解密校验', exported: mode !== 'start',
+    verified: mode === 'review', recycled: false, selected: mode === 'review' }));
   const base = {
     busy: false, busyKind: '', phase: 'new', displayPhase: 'new', statusText: '',
     input: { path: 'D:\\业务资料\\2026-11 注册申报', name: '2026-11 注册申报', kind: 'folder' },
