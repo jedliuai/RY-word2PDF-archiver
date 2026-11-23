@@ -12,7 +12,7 @@
 
 安装下方依赖后，可以双击 **`启动程序.vbs`** 打开桌面界面。如果没有启动，双击 **`start.bat`** 查看错误。
 
-在其他电脑从源码运行，需要 Windows、Python 3.10+（包含 Tkinter），安装依赖后启动：
+在其他电脑从源码运行，需要 Windows、Python 3.10+、Microsoft Edge WebView2 运行时（Windows 10/11 一般已自带），安装依赖后启动：
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -44,7 +44,7 @@ python "WPS转PDF神器.py"
 
 WPS 导出的 PDF 可能仍受绿盾保护，导出没报错不能证明最终 PDF 可交付。先完成解密和打包验证，再清理源文件，删除之前就有一份已验证的交付物。
 
-界面原生使用 Tkinter，不会启动 Chrome、Edge 或其他浏览器。复用了另一个批量删除项目的递归清单、全选/取消和批量清理交互，但把永久删除改为回收站。
+界面分三屏：开始 → 处理中 → 交付与清理，左侧始终显示五步进度。界面用 HTML 编写，通过 pywebview 嵌在原生窗口中，由系统自带的 Edge WebView2 渲染，不会启动 Chrome、Edge 或其他浏览器。原 Tkinter 界面保留为备用：`python "WPS转PDF神器.py" --classic`；缺少 pywebview 时也会自动退回经典界面。复用了另一个批量删除项目的递归清单、全选/取消和批量清理交互，但把永久删除改为回收站。
 
 ## 自动检查什么
 
@@ -102,8 +102,10 @@ PDF 结构检查使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.4.0/m
 python -m unittest discover -s tests -v
 ```
 
+`tests/web_smoke.py` 会真实打开一次 WebView2 窗口，检查前端与 Python 接口的连通，不调用 WPS 和绿盾。
+
 `tests/local_smoke.py` 是显式运行的本机联调脚本，需要额外安装 `python-docx`。它只生成并处理自己的样本，可能出现官方审批窗口，不纳入普通单元测试。
 
-项目入口为 `WPS转PDF神器.py`；界面在 `desktop_app.py`，流程在 `pdf_workflow.py`，绿盾/WinRAR/回收站在 `local_services.py`，WPS 子进程在 `wps_worker.py`。
+项目入口为 `WPS转PDF神器.py`。前后端分离：前端在 `web/`（纯 HTML/CSS/JS，无需构建），窗口与 JS 接口在 `web_app.py`，界面无关的调度在 `app_controller.py`；经典界面在 `desktop_app.py`，流程在 `pdf_workflow.py`，绿盾/WinRAR/回收站在 `local_services.py`，WPS 子进程在 `wps_worker.py`。
 
 MIT License · [原项目](https://github.com/jedliuai/wps-batch-pdf-converter)
