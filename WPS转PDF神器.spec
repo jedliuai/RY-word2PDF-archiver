@@ -5,7 +5,7 @@ a = Analysis(
     ['WPS转PDF神器.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('web', 'web')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

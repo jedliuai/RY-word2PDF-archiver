@@ -3,3 +3,4 @@ pypdf>=6.7,<7
 Send2Trash>=1.8.3,<3
 tkinterdnd2>=0.4.3,<0.5
 rarfile>=4.2,<5
+pywebview>=5.4,<6

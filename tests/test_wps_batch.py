@@ -13,11 +13,17 @@ class WpsSessionTests(unittest.TestCase):
             app = Mock()
             app.Documents.Count = 0
             def open_doc(source, **kwargs):
+                self.assertIs(app.Visible, False)
+                self.assertEqual(app.DisplayAlerts, 0)
                 app.Documents.Count += 1
                 doc = Mock()
                 doc.ComputeStatistics.return_value = 2
                 doc.SaveAs2.side_effect = lambda target, **options: Path(target).write_bytes(b'%PDF-sample')
-                doc.Close.side_effect = lambda **options: setattr(app.Documents, 'Count', app.Documents.Count - 1)
+                def close_doc(**options):
+                    doc.Repaginate.assert_called_once_with()
+                    doc.ComputeStatistics.assert_called_once_with(2)
+                    app.Documents.Count -= 1
+                doc.Close.side_effect = close_doc
                 return doc
             app.Documents.Open.side_effect = open_doc
             jobs = [{'source': str(root / f'{i}.docx'), 'output': str(root / f'{i}.pdf')} for i in range(4)]

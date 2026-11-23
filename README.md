@@ -12,7 +12,7 @@
 
 安装下方依赖后，可以双击 **`启动程序.vbs`** 打开桌面界面。如果没有启动，双击 **`start.bat`** 查看错误。
 
-在其他电脑从源码运行，需要 Windows、Python 3.10+（包含 Tkinter），安装依赖后启动：
+在其他电脑从源码运行，需要 Windows、Python 3.10+、Microsoft Edge WebView2 运行时（Windows 10/11 一般已自带），安装依赖后启动：
 
 ```powershell
 python -m pip install -r requirements.txt
@@ -44,22 +44,22 @@ python "WPS转PDF神器.py"
 
 WPS 导出的 PDF 可能仍受绿盾保护，导出没报错不能证明最终 PDF 可交付。先完成解密和打包验证，再清理源文件，删除之前就有一份已验证的交付物。
 
-界面原生使用 Tkinter，不会启动 Chrome、Edge 或其他浏览器。复用了另一个批量删除项目的递归清单、全选/取消和批量清理交互，但把永久删除改为回收站。
+界面分三屏：开始 → 处理中 → 交付与清理，左侧始终显示五步进度。界面用 HTML 编写，通过 pywebview 嵌在原生窗口中，由系统自带的 Edge WebView2 渲染，不会启动 Chrome、Edge 或其他浏览器。原 Tkinter 界面保留为备用：`python "WPS转PDF神器.py" --classic`；缺少 pywebview 时也会自动退回经典界面。复用了另一个批量删除项目的递归清单、全选/取消和批量清理交互，但把永久删除改为回收站。
 
 ## 自动检查什么
 
 | 环节 | 检查与异常行为 |
 | --- | --- |
 | 扫描 | `.doc`、`.docx`、`.wps`；忽略 `~$` Word 临时文件；无法访问、链接/联接点、同名源文件冲突时停止 |
-| 转换 | 全批次只启动一个 WPS 会话，逐份只读打开、获取页数并导出，全部结束后退出 WPS；单份卡住 180 秒时停止 |
+| 转换 | 通过 `KWPS.Application` 后台运行本机 WPS。整批复用一个会话，逐份只读打开、获取页数并导出，完成后退出该会话。单份卡住 180 秒时停止 |
 | 已有 PDF | 不会默默跳过后允许删除 Word。明确允许重转时，先备份旧 PDF，再用本次导出结果替换 |
 | 源文件一致性 | 扫描时保存核对副本。WPS 可能自动加密源 Word，因此解密后比较副本和源文件的字节内容；不一致就停止 |
 | 绿盾 | 对处理目录整体申请解密，核对副本目录也整体提交，不逐文件申请；递归复核数量、加密头和可读性，再实际校验 PDF |
-| PDF | 明文 PDF 头、完整尾部、可解析页面和内容流、有效页面尺寸；转换文件的页数必须等于 WPS 源文档页数 |
+| PDF | 检查文件头和尾部，解析每页内容流，并将新导出的 PDF 页数与源 Word 核对。能直接打开的权限受限 PDF 照常校验，需输入打开密码或无法读取时停止 |
 | RAR | 真正的 RAR5；完整性测试、文件清单核对、临时解压后与全部明文 PDF 的 SHA-256 比较 |
 | 清理 | 再次检查源文件、全部 PDF、文件清单和 RAR 未变化；逐项移入回收站；中途失败立即停止并记录已完成项 |
 
-PDF 结构检查使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.4.0/modules/PdfReader.html)。结构和页数一致仍不能保证排版、图像、文字内容完全正确，因此默认保留人工抽查步骤。
+PDF 解析使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.7.5/modules/PdfReader.html)。排版、图片和文字内容由清理前的人工抽查确认。
 
 **任何失败都不会自动放行下一环节。** 中途停止不会撤销已经提交的绿盾申请，也不会撤销此前已经完成的转换或清理。
 
@@ -92,7 +92,7 @@ PDF 结构检查使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.4.0/m
 
 调用顺序为 `status`（服务就绪）→ `check`（递归检查）→ 必要时 `request`（目录申请）→ `wait`（等待，不重复申请）→ 再次 `check`。
 
-后台识别已知加密头 `87 7D 1C ?? 90 10 29 01`，逐次检查文件可读性和剩余加密数量。只有加密头消失、不可读和警告均为零、扫描数量与完整清单一致时，才允许进入 PDF 解析和页数检查。实际 PDF 必须能按明文读取和解析；仅仅点击了申请、申请已提交或等待时间到了，都不会被视为成功。
+后台识别已知加密头 `87 7D 1C ?? 90 10 29 01`，逐次检查文件可读性和剩余加密数量。加密头消失、不可读和警告均为零、扫描数量与完整清单一致后，才校验 PDF 内容流和页数。
 
 日志会显示扫描数量、仍加密数量、不可读数量和最终复核结果。超时仍加密就停在等待阶段，可在批准后继续等待。
 
@@ -102,8 +102,10 @@ PDF 结构检查使用 [pypdf PdfReader](https://pypdf.readthedocs.io/en/6.4.0/m
 python -m unittest discover -s tests -v
 ```
 
+`tests/web_smoke.py` 会真实打开一次 WebView2 窗口，检查前端与 Python 接口的连通，不调用 WPS 和绿盾。
+
 `tests/local_smoke.py` 是显式运行的本机联调脚本，需要额外安装 `python-docx`。它只生成并处理自己的样本，可能出现官方审批窗口，不纳入普通单元测试。
 
-项目入口为 `WPS转PDF神器.py`；界面在 `desktop_app.py`，流程在 `pdf_workflow.py`，绿盾/WinRAR/回收站在 `local_services.py`，WPS 子进程在 `wps_worker.py`。
+项目入口为 `WPS转PDF神器.py`。前后端分离：前端在 `web/`（纯 HTML/CSS/JS，无需构建），窗口与 JS 接口在 `web_app.py`，界面无关的调度在 `app_controller.py`；经典界面在 `desktop_app.py`，流程在 `pdf_workflow.py`，绿盾/WinRAR/回收站在 `local_services.py`，WPS 子进程在 `wps_worker.py`。
 
 MIT License · [原项目](https://github.com/jedliuai/wps-batch-pdf-converter)

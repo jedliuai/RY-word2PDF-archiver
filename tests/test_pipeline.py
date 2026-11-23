@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, NameObject
 from pdf_workflow import Workflow, WorkflowError, validate_pdf
 from local_services import Cancelled, ServiceError
 
@@ -120,11 +121,26 @@ class PipelineSafetyTests(unittest.TestCase):
 
     def test_page_mismatch_blocks_archive_and_cleanup(self):
         flow = self.workflow(converter=Converter(pages=1, reported=2))
-        with self.assertRaisesRegex(WorkflowError, '页数不一致'):
+        with self.assertRaisesRegex(WorkflowError, '页数不一致：Word 2 页 / PDF 1 页'):
             flow.prepare()
         self.assertFalse(flow.archiver.created)
         with self.assertRaises(WorkflowError):
             flow.cleanup([self.word])
+        self.assertTrue(self.word.exists())
+
+    def test_unreadable_second_page_stream_blocks_archive(self):
+        writer = PdfWriter()
+        writer.add_blank_page(width=595, height=842)
+        page = writer.add_blank_page(width=595, height=842)
+        stream = DecodedStreamObject()
+        stream.set_data(b'BT ET')
+        stream[NameObject('/Filter')] = NameObject('/UnsupportedForTest')
+        page.replace_contents(stream)
+        writer.write(self.root / '两页附件.pdf')
+        flow = self.workflow()
+        with self.assertRaisesRegex(WorkflowError, '两页附件.pdf.*UnsupportedForTest'):
+            flow.prepare()
+        self.assertFalse(flow.archiver.created)
         self.assertTrue(self.word.exists())
 
     def test_conversion_failure_keeps_word(self):
@@ -239,20 +255,34 @@ class PipelineSafetyTests(unittest.TestCase):
             flow.resume()
         self.assertTrue(self.word.exists())
 
-    def test_password_pdf_is_not_treated_as_deliverable(self):
+    def test_pdf_that_requires_open_password_blocks_archive(self):
         writer = PdfWriter()
         writer.add_blank_page(width=595, height=842)
         writer.encrypt('test-password')
         writer.write(self.root / '有密码.pdf')
         flow = self.workflow()
-        with self.assertRaisesRegex(WorkflowError, '密码保护'):
+        with self.assertRaisesRegex(WorkflowError, '打开需要密码'):
             flow.prepare()
         self.assertTrue(self.word.exists())
 
+    def test_pdf_with_permissions_password_can_be_archived(self):
+        writer = PdfWriter()
+        writer.add_blank_page(width=595, height=842)
+        writer.encrypt('', 'owner-password')
+        attachment = self.root / '可打开的附件.pdf'
+        writer.write(attachment)
+        contents = attachment.read_bytes()
+        flow = self.workflow()
+        self.assertTrue(flow.prepare())
+        self.assertEqual(flow.phase, 'review')
+        self.assertTrue(flow.archiver.created)
+        self.assertEqual(attachment.read_bytes(), contents)
+
     def test_missing_conversion_output_blocks(self):
         flow = self.workflow(converter=Converter(missing=True))
-        with self.assertRaises(OSError):
+        with self.assertRaisesRegex(WorkflowError, '没有生成非空 PDF'):
             flow.prepare()
+        self.assertTrue(self.word.exists())
         self.assertTrue(self.word.exists())
 
     def test_pending_resume_never_resubmits(self):
