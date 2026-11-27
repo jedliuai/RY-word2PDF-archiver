@@ -1,4 +1,3 @@
-> **Chatgpt代充：[aishopvip.com](https://aishopvip.com)**
 
 # RY-word2PDF-archiver · 文档归档助手
 
